@@ -52,3 +52,6 @@ By default, the webserver starts on port 85. Change this in the last line of pre
 </VirtualHost>
 
 ```
+
+# Technology
+Python flask, running a jquery mobile webpage, communicating over websockets. I also included the original themeroller theme (http://jqueryui.com/themeroller/) so you could roll your own. 
