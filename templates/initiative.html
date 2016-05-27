@@ -1,0 +1,267 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Initiative!</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="static/css/jquery.mobile-1.4.5.min.css" />
+    <link rel="stylesheet" href="static/css/jquery-ui.css" />
+    <link rel="stylesheet" href="static/css/pf_init.min.css" />
+	<script src="static/js/jquery-2.1.1.min.js"></script>
+    <script src="static/js/jquery-ui.min.js"></script>
+	<script src="static/js/jquery.mobile-1.4.5.min.js"></script>
+    <script src="static/js/jquery.ui.touch-punch.min.js"></script>
+    <script src="static/js/socket.io.min.js"></script>
+</head>
+<style>
+    .ui-page {
+        background: #000;
+        background-image:url(static/css/images/bg.png);
+        background-size:cover;
+    }
+
+</style>
+<body> 
+
+<div data-role="page">
+
+	<div data-role="header">
+        <button id="clear" data-icon="delete">Clear</button>
+		<h1>Initiative!</h1>
+        <button id="roundcounter" data-icon="bars" data-iconpos="right">Round -</button>
+	</div><!-- /header -->
+
+	<div data-role="content">
+
+        <ul data-role="listview" data-theme="a" data-inset="true" id="presentlist"></ul>
+
+        <div class="ui-grid-a">
+            <div class="ui-block-a">
+                    <button id="newinit" data-mini="true" data-icon="action">Add initative</button>
+                    <button id="previous" data-mini="true" data-icon="back">Previous</button>
+            </div>
+            <div class="ui-block-b">
+                <button id="neweffect" data-mini="true" data-icon="action" data-iconpos="right">Add effect</button>
+                <button id="next" data-mini="true" data-icon="forward" data-iconpos="right">Next</button>
+            </div>
+        </div>
+
+        <ul data-role="listview" data-theme="a" data-inset="true" id="effectlist"></ul>
+
+	</div><!-- /content -->
+
+    <!-- Add initiative popup -->
+    <div data-role="popup" id="popupBasic" class="ui-content">
+        <input type="text" id="monster_name" placeholder="Player name" data-clear-btn="true">
+        <label for="monster_roll">New initiative roll:</label>
+        <input type="range" data-highlight="true" name="monster_roll" id="monster_roll" value="1" min="1" max="20">
+        <label for="monster_bonus">New initiative bonus:</label>
+        <input type="range" data-highlight="true" name="monster_bonus" id="monster_bonus" value="2" min="-5" max="30">
+        <a href="#" data-rel="back" data-role="button" data-icon="delete" data-iconpos="notext" class="ui-btn-right">Close</a>
+        <a href="#killpopupBasic" data-rel="popup" data-role="button" data-mini="true" id="killpopupBasic">Add!</a>
+    </div>
+
+    <!-- Add effect popup -->
+    <div data-role="popup" id="popupEffect" class="ui-content">
+        <input type="text" id="effect_name" placeholder="New effect name" data-clear-btn="true">
+        <label for="effect_duration">Effect duration:</label>
+        <input type="range" data-highlight="true" name="effect_duration" id="effect_duration" value="1" min="1" max="30">
+        <a href="#" data-rel="back" data-role="button" data-icon="delete" data-iconpos="notext" class="ui-btn-right">Close</a>
+        <a href="#killpopupEffect" data-rel="popup" data-role="button" data-mini="true" id="killpopupEffect">Add!</a>
+    </div>
+
+</div><!-- /page -->
+<script language="javascript">
+    // Draw an additional initiative in the list
+    function add_list_initiative(name, total, highlight) {
+        attrs = {'text': name}
+        li = $('<li/>', attrs)
+        if(highlight) {
+            li.attr("data-theme", "b").addClass("ui-body-b").removeClass("ui-body-inherit").attr("highlight","true")
+        }
+        li.append($('<span>', {"text":"Initiative: " + total,"class":"ui-li-count"}))
+        $("#presentlist").append(li)
+    }
+
+    // Draw an additional effect in the list
+    function add_list_effect(name, rounds) {
+        attrs = {'text': name}
+        if(rounds == 0) {
+            attrs['class']='ui-disabled'
+            attrs['style']='pointer-events: auto;'
+        }
+        li = $('<li/>', attrs)
+        li.append($('<span>', {"text":"Rounds left: " + rounds,"class":"ui-li-count"}))
+
+        if(rounds > 0) {
+            $("#effectlist").prepend(li)
+        } else {
+            $("#effectlist").append(li)
+        }
+    }
+
+    function hide_your_children() {
+        if($("#presentlist").attr("mini")) {
+            $("#presentlist li").hide()
+	    $("#presentlist li[highlight='true']").show()	
+        } else {
+            $("#presentlist li").show()
+        }
+    }
+
+    // Basic cookie stuff, very uninteresting
+    function setCookie(key, value) {
+            var expires = new Date();
+            expires.setTime(expires.getTime() + (1 * 24 * 60 * 60 * 1000));
+            document.cookie = key + '=' + value + ';expires=' + expires.toUTCString();
+        }
+
+    function getCookie(key) {
+            var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
+            return keyValue ? keyValue[2] : null;
+    }
+
+    // This old_index global variable could also be done as a jquery attribute
+    var old_index = -1
+    var socket
+    $(document).bind('pageinit', function() {
+        // Zaken om de boel sorteerbaar te houden
+        $( "#presentlist" ).sortable()
+        $( "#presentlist" ).disableSelection();
+
+        // So this list is not actually sorteable, but this is the easiest way of making list items deleteable by swiping
+        $( "#effectlist" ).sortable()
+        $( "#effectlist" ).disableSelection();
+
+        <!-- Refresh list to the end of sort to have a correct display -->
+        $( "#presentlist" ).bind( "sortstart", function(event, ui) {
+            old_index = ui.item.index()
+        });
+
+        // All aboard the websocket train!
+        var socket = io.connect('http://'+location.host+'/state');
+
+        // So when someone stops dragging, two things can be the case. Either the item has been dragged to the side.
+        // In that case, We call it a swipe and delete it.
+        // Else, check if our index has changed courtesy of jquery mobile. In that case, it's a player delay action
+        $( "#presentlist" ).bind( "sortstop", function(event, ui) {
+            if (Math.abs(ui.offset.left - ui.originalPosition.left)>70){
+                socket.emit("delete", {"index": ui.item.index()});
+                // Meteen weggooien, want trage update is lelijk
+                $( "#presentlist li").eq(ui.item.index()).remove();
+            } else if (old_index != ui.item.index()) {
+                // Oh, dit is een delay..
+                socket.emit("move", {"old_index": old_index, "new_index":ui.item.index()});
+            }
+            old_index = -1
+        });
+
+        // Als iemand sleur en pleur doet
+        $( "#effectlist" ).bind( "sortstop", function(event, ui) {
+            if (Math.abs(ui.offset.left - ui.originalPosition.left)>70) {
+                socket.emit("deleteeffect", {"name": ui.item.contents().get(0).nodeValue});
+            }
+        })
+
+        // Vul de form elementen uit de cookie
+        playerName = getCookie("player")
+        if(playerName) {
+            $("#monster_name").val(playerName)
+            $("#monster_bonus").val(getCookie("playerinit"))
+            $("#effect_duration").val(getCookie("effectduration") ? getCookie("effectduration") : 0)
+        }
+
+
+        $( "#roundcounter" ).bind( "click", function(event, ui) {
+            if($("#presentlist").attr("mini") || $( "#presentlist li").size() == 0) {
+                $("#presentlist").removeAttr("mini")
+            } else {
+                $("#presentlist").attr("mini", "true")
+            }
+            hide_your_children()
+        })
+
+        // Als iemand op NEXT klikt, rol dan door naar de volgende
+        $( "#next" ).bind( "click", function(event, ui) {
+            if($( "#presentlist li").size() > 0) {
+                socket.emit('next');
+            }
+        })
+
+        $( "#previous" ).bind( "click", function(event, ui) {
+            socket.emit('rollback_next');
+        })
+
+        // De Clear knop gooit leeg
+        $( "#clear" ).bind( "click", function(event, ui) {
+            $("#presentlist").empty()
+            socket.emit("clear");
+        })
+
+        // Open de popup
+        $( "#newinit" ).bind( "click", function(event, ui) {
+            $( "#popupBasic" ).popup( "open" )
+        })
+
+        $( "#neweffect" ).bind( "click", function(event, ui) {
+            $( "#popupEffect" ).popup( "open" )
+        })
+
+
+        // Iedere keer dat pop de "new" knop wordt gedrukt, rol een willekeurige waarde
+        $( "#popupBasic" ).bind({
+            popupafteropen: function(event, ui) {
+                $("#monster_roll").val(Math.floor((Math.random() * 20) + 1)).slider("refresh");
+            }
+        });
+
+        // Verberg de popup na invullen en voer nieuw initative in
+        $( "#killpopupBasic" ).bind( "click", function(event, ui) {
+            if($("#monster_name").val()) {
+                setCookie("player", $("#monster_name").val())
+                setCookie("playerinit", $("#monster_bonus").val())
+                socket.emit("add",{"name":$("#monster_name").val(),"bonus": $("#monster_bonus").val(), "roll":$("#monster_roll").val()})
+                // Vroeger trok ik alvast een fake extra regel erbij, maar met websockets is dat niet meer nodig
+                $("#popupBasic").popup("close")
+            }
+        });
+
+        // Verberg de popup na invullen en voer nieuw effect in
+        $( "#killpopupEffect" ).bind( "click", function(event, ui) {
+            if($("#effect_name").val()) {
+                setCookie("effectduration", $("#effect_duration").val())
+                socket.emit("addeffect",{"name":$("#effect_name").val(),"duration": $("#effect_duration").val()})
+                $("#popupEffect").popup("close")
+            }
+        });
+
+        // Vang status af en ververs tabel
+       socket.on('newstate', function(msg) {
+            initiatives = msg.initiatives
+            $("#presentlist").empty()
+            $(initiatives).each(function (idx) {
+                add_list_initiative(this.name, this.total, this.turn)
+            })
+            $("#presentlist").listview("refresh")
+           hide_your_children()
+          roundtext = "Round " + (msg.round == 0 ? "-" : msg.round)
+           $("#roundcounter").text(roundtext)
+
+        });
+
+       // Vang status af en ververs tabel
+       socket.on('neweffects', function(msg) {
+            effects = msg.effects
+            $("#effectlist").empty()
+            $(effects).each(function (idx) {
+                add_list_effect(this.name, this.rounds)
+            })
+            $("#effectlist").listview("refresh")
+        });
+
+        // Init gedaan, gooi die websocket op en wacht gespannen af!
+        socket.emit('getstate');
+    });
+</script>
+
+</body>
+</html>

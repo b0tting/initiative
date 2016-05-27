@@ -1,0 +1,151 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>My Page</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	<link rel="stylesheet" href="/static/css/jquery.mobile-1.4.5.min.css" />
+	<script src="static/js/jquery-2.2.4.min.js"></script>
+	<script src="static/js/jquery.mobile-1.4.5.min.js"></script>
+
+    <style>
+
+        .ui-btn {
+            background-color: lightblue !important;
+            opacity: 0.8;
+        }
+
+
+        .is_planned .ui-btn {
+            background-color: lightblue !important;
+            opacity: 0.8;
+        }
+
+        .is_there {
+            background: lightgreen;
+            opacity: 0.8;
+
+        }
+
+        .is_done {
+            background: red;
+            opacity: 0.6;
+
+        }
+
+        .is_notplanned {
+            background: grey;
+            opacity: 0.8;
+
+        }
+
+
+    </style>
+
+
+</head> 
+<body> 
+
+<div data-role="page">
+
+	<div data-role="header">
+		<h1>Present!</h1>
+	</div><!-- /header -->
+
+	<div data-role="content">
+
+<ul data-role="listview" data-inset="true" data-filter="true" id="presentlist">
+    <li state="30" data-role="list-divider">Gepland<span class="ui-li-count"></span></li>
+	<li state="30"><a href="#" >Janet</a></li>
+	<li state="30"><a href="#" state="30">Willem</a></li>
+	<li state="30"><a href="#" state="30">Alfred</a></li>
+	<li state="30"><a href="#" state="30">Zeboda</a></li>
+	<li state="30"><a href="#" state="30">Jantien</a></li>
+    <li state="10" data-role="list-divider">Ingechecked<span class="ui-li-count"></span></li>
+    <li state="20" data-role="list-divider">Uitgechecked <span class="ui-li-count"></span></li>
+    <li data-role="list-divider">Onbekend</li>
+</ul>
+	</div><!-- /content -->
+
+</div><!-- /page -->
+
+<script language="javascript">
+    const STATUS_IN = "10";
+    const STATUS_OUT = "20";
+    const STATUS_PLANNED = "30";
+
+    const TIMEOUT_BEFORE_SAVE = 3
+
+    lastaction = 0;
+    var dividers = {}
+
+    function checkSortTime() {
+
+        // dividers idee is kut, dat moet een object zijn dat a) weet wat zijn divider is en b) een array met zijn LI bij houdt
+        now = new Date() / 1000;
+        if(now - lastaction < TIMEOUT_BEFORE_SAVE) {
+            // No action yet since a more recent change was made
+            return;
+        }
+
+        listItems = $("#presentlist").find("li");
+        if(Object.keys(dividers).length == 0) {
+            listItems.each(function (idx) {
+                if($(this).attr("data-role") == "list-divider") {
+                    dividers[$(this).attr("state")] = $(this)
+                    dividers["count"+ $(this).attr("state")] = 0
+                }
+            })
+        }
+
+
+        listItems.each(function (idx) {
+            if($(this).attr("data-role") != "list-divider") {
+                state = $(this).attr("state")
+                dividers["count" + state]++
+                mydivider = dividers[state]
+                mydivider.after($(this))
+            }
+        })
+
+        dividers[STATUS_IN].find("span").text(dividers["count" + STATUS_IN])
+        dividers[STATUS_OUT].find("span").text(dividers["count" + STATUS_OUT])
+        dividers[STATUS_PLANNED].find("span").text(dividers["count" + STATUS_PLANNED])
+
+        $("#presentlist").listview("refresh")
+    }
+
+    function setState(li, newstate) {
+        li.attr("state", newstate)
+        li.removeClass("is_planned is_there is_done")
+        switch (newstate) {
+            case STATUS_IN:
+                li.addClass("is_there");
+                break;
+            case STATUS_OUT:
+                li.addClass("is_done");
+                break;
+            case STATUS_PLANNED:
+                li.addClass("is_planned");
+                break;
+        }
+    }
+
+   $("#presentlist").on("click", "li", function(){
+       if($(this).attr("state") == STATUS_PLANNED) {
+           setState($(this), STATUS_IN)
+       } else if($(this).attr("state") == STATUS_IN) {
+           setState($(this), STATUS_OUT)
+       } else if($(this).attr("state") == STATUS_OUT) {
+           setState($(this), STATUS_PLANNED)
+       }
+
+       lastaction = new Date() / 1000;
+       setTimeout(checkSortTime, 3000)
+    });
+
+
+
+</script>
+
+</body>
+</html>
