@@ -3,6 +3,8 @@ We like playing D20 based games - pathfinder, Dungeons and dragons 3rd edition, 
 
 These discussions take the speed out of the game, a problem this page tries to solve by delegating to players. All players can open the initiative app and allow the DM to delegate the calling of rounds and round based effect to the players. 
 
+![Alt text](/static/css/images/screenshot.png?raw=true "App screeshot")
+
 An example of play: 
 - DM: "You step on a branch. The loud crack does not seem to surprise the orc, who had already nocked an arrow. He turns around to face you."
 - DM: "Everybody, add your initiative. Alice, can you call off the rounds for me? Please add the orc with a +4 initative bonus. Also add a "surprise" effect that lasts three rounds and tell me when it hits zero"
