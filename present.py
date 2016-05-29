@@ -1,5 +1,6 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
+import time
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -37,11 +38,19 @@ class GameState:
     effects = []
     initiatives = []
     round = 0
+    effects_timestamp = 0
+    initiatives_timestamp = 0
+
+    def __init__(self):
+        self.effects_timestamp = time.time()
+        self.initiatives_timestamp = time.time()
 
     def add_effect(self, name, duration):
+        self.effects_timestamp = time.time()
         self.effects.append(Effect(name, duration))
 
     def add_initiative(self, new_init):
+        self.initiatives_timestamp = time.time()
         insert_at = 0
         for init in self.initiatives:
             if new_init.is_earlier_than(init):
@@ -51,17 +60,20 @@ class GameState:
         self.initiatives.insert(insert_at, new_init)
 
     def next_round(self, rollback=False):
+        self.initiatives_timestamp = time.time()
         for eff in self.effects:
-
             eff.duration = eff.duration + (1 if rollback else -1)
 
     def clear(self):
+        self.initiatives_timestamp = time.time()
+        self.effects_timestamp = time.time()
         self.effects[:] = []
         self.initiatives[:] = []
         self.round = 0
 
     ## Vals spsler! Als er meerdere "bless" effecten zijn wordt nu altijd de eerste verwijderd!
     def remove_effect(self, name):
+        self.effects_timestamp = time.time()
         i = 0
         while i < len(self.effects):
             if self.effects[i].name == name:
@@ -70,6 +82,7 @@ class GameState:
             i += 1
 
     def remove_initiative(self, index):
+        self.initiatives_timestamp = time.time()
         init = self.initiatives.pop(index)
         if(init.turn):
             ## Net 1 gepopt
@@ -79,12 +92,14 @@ class GameState:
                 self.set_current(0)
 
     def move_initiative(self, old_index, new_index):
+        self.initiatives_timestamp = time.time()
         init = self.initiatives[old_index]
         self.initiatives.insert(new_index, self.initiatives.pop(old_index))
         if init.turn:
             self.set_current(old_index)
 
     def next_initiative(self):
+        self.initiatives_timestamp = time.time()
         if len(self.initiatives) > 0:
             current_index = self.get_current()
             if current_index + 1 < len(self.initiatives):
@@ -98,6 +113,7 @@ class GameState:
             self.set_current(new_index)
 
     def rollback_initiative(self):
+        self.initiatives_timestamp = time.time()
         if len(self.initiatives) > 0:
             current_index = self.get_current()
             if current_index - 1 < 0:
@@ -169,9 +185,12 @@ def delete_initiative(data):
     trigger_initiative_update_message()
 
 @socketio.on('getstate', namespace='/state')
-def test_message():
-    emit('newstate', get_initiative_state())
-    emit('neweffects', get_effects_state())
+def get_state(data):
+    if not "effects_timestamp" in data or data["effects_timestamp"] != effects.effects_timestamp:
+        emit('neweffects', get_effects_state())
+    if not "initiatives_timestamp" in data or data["initiatives_timestamp"] != effects.initiatives_timestamp:
+        emit('newstate', get_initiative_state())
+
 
 def trigger_initiative_update_message():
     emit('newstate', get_initiative_state(), broadcast=True, namespace="/state")
@@ -189,10 +208,10 @@ def add_initiative(data):
     trigger_initiative_update_message()
 
 def get_initiative_state():
-    return {"initiatives": effects.get_initiatives_dict(), "round": effects.round}
+    return {"initiatives": effects.get_initiatives_dict(), "round": effects.round, "initiatives_timestamp":effects.initiatives_timestamp}
 
 def get_effects_state():
-    return {"effects":effects.get_effects_dict()}
+    return {"effects":effects.get_effects_dict(), "effects_timestamp":effects.effects_timestamp}
 
 @app.route('/present')
 def initiative():

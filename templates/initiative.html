@@ -27,7 +27,7 @@
 	<div data-role="header">
         <button id="clear" data-icon="delete">Clear</button>
 		<h1>Initiative!</h1>
-        <button id="roundcounter" data-icon="bars" data-iconpos="right">Round -</button>
+        <button id="roundcounter" data-disabled="true">Round -</button>
 	</div><!-- /header -->
 
 	<div data-role="content">
@@ -69,6 +69,16 @@
         <a href="#killpopupEffect" data-rel="popup" data-role="button" data-mini="true" id="killpopupEffect">Add!</a>
     </div>
 
+    <!-- Confirm clear popup -->
+    <div data-role="popup" id="clearpopup" data-title="Confirm clear?" class="ui-content">
+      <div data-role="content">
+        <h3 class="sure-1">Confirm clearing</h3>
+        <p class="sure-2">Are you sure you wish to clear the current initiative state and remove all effects?</p>
+        <a href="#" id="clearconfirm" data-role="button" data-theme="b" data-rel="back">Yes</a>
+        <a href="#" data-rel="back" data-role="button" data-icon="delete" data-iconpos="notext" class="ui-btn-right">Close</a>
+      </div>
+    </div>
+
 </div><!-- /page -->
 <script language="javascript">
     // Draw an additional initiative in the list
@@ -99,15 +109,6 @@
         }
     }
 
-    function hide_your_children() {
-        if($("#presentlist").attr("mini")) {
-            $("#presentlist li").hide()
-	    $("#presentlist li[highlight='true']").show()	
-        } else {
-            $("#presentlist li").show()
-        }
-    }
-
     // Basic cookie stuff, very uninteresting
     function setCookie(key, value) {
             var expires = new Date();
@@ -123,6 +124,8 @@
     // This old_index global variable could also be done as a jquery attribute
     var old_index = -1
     var socket
+    var effects_timestamp = 0
+    var initiatives_timestamp = 0
     $(document).bind('pageinit', function() {
         // Zaken om de boel sorteerbaar te houden
         $( "#presentlist" ).sortable()
@@ -172,12 +175,9 @@
 
 
         $( "#roundcounter" ).bind( "click", function(event, ui) {
-            if($("#presentlist").attr("mini") || $( "#presentlist li").size() == 0) {
-                $("#presentlist").removeAttr("mini")
-            } else {
-                $("#presentlist").attr("mini", "true")
-            }
-            hide_your_children()
+            $( "#presentlist li").hide()
+            $( "#presentlist li").show()
+
         })
 
         // Als iemand op NEXT klikt, rol dan door naar de volgende
@@ -193,6 +193,10 @@
 
         // De Clear knop gooit leeg
         $( "#clear" ).bind( "click", function(event, ui) {
+            $( "#clearpopup" ).popup( "open" )
+        })
+
+        $("#clearconfirm").bind("click", function(event, ui){
             $("#presentlist").empty()
             socket.emit("clear");
         })
@@ -236,30 +240,39 @@
 
         // Vang status af en ververs tabel
        socket.on('newstate', function(msg) {
-            initiatives = msg.initiatives
-            $("#presentlist").empty()
-            $(initiatives).each(function (idx) {
-                add_list_initiative(this.name, this.total, this.turn)
-            })
-            $("#presentlist").listview("refresh")
-           hide_your_children()
-          roundtext = "Round " + (msg.round == 0 ? "-" : msg.round)
-           $("#roundcounter").text(roundtext)
-
+            if(msg.initiatives_timestamp != initiatives_timestamp) {
+                initiatives = msg.initiatives
+                $("#presentlist").empty()
+                $(initiatives).each(function (idx) {
+                    add_list_initiative(this.name, this.total, this.turn)
+                })
+                $("#presentlist").listview("refresh")
+                roundtext = "Round " + (msg.round == 0 ? "-" : msg.round)
+                $("#roundcounter").text(roundtext)
+                initiatives_timestamp = msg.initiatives_timestamp
+            }
         });
 
        // Vang status af en ververs tabel
        socket.on('neweffects', function(msg) {
-            effects = msg.effects
-            $("#effectlist").empty()
-            $(effects).each(function (idx) {
-                add_list_effect(this.name, this.rounds)
-            })
-            $("#effectlist").listview("refresh")
+            if(msg.effects_timestamp != effects_timestamp) {
+                effects = msg.effects
+                $("#effectlist").empty()
+                $(effects).each(function (idx) {
+                    add_list_effect(this.name, this.rounds)
+                })
+                $("#effectlist").listview("refresh")
+                effects_timestamp = msg.effects_timestamp
+            }
+        });
+
+        // We hebben misschien een update gemist als de user weg klikt
+        $(window).focus(function(e) {
+            socket.emit('getstate', {"effects_timestamp":effects_timestamp, "initiatives_timestamp":initiatives_timestamp});
         });
 
         // Init gedaan, gooi die websocket op en wacht gespannen af!
-        socket.emit('getstate');
+        socket.emit('getstate', {});
     });
 </script>
 
