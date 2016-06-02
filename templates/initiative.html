@@ -128,15 +128,18 @@
     var initiatives_timestamp = 0
     $(document).bind('pageinit', function() {
         // Zaken om de boel sorteerbaar te houden
-        $( "#presentlist" ).sortable()
-        $( "#presentlist" ).disableSelection();
+        var presentlist = $( "#presentlist" )
+        var effectlist = $( "#effectlist" )
+
+        presentlist.sortable()
+        presentlist.disableSelection();
 
         // So this list is not actually sorteable, but this is the easiest way of making list items deleteable by swiping
-        $( "#effectlist" ).sortable()
-        $( "#effectlist" ).disableSelection();
+        effectlist.sortable()
+        effectlist.disableSelection();
 
         <!-- Refresh list to the end of sort to have a correct display -->
-        $( "#presentlist" ).bind( "sortstart", function(event, ui) {
+        presentlist.bind( "sortstart", function(event, ui) {
             old_index = ui.item.index()
         });
 
@@ -146,7 +149,7 @@
         // So when someone stops dragging, two things can be the case. Either the item has been dragged to the side.
         // In that case, We call it a swipe and delete it.
         // Else, check if our index has changed courtesy of jquery mobile. In that case, it's a player delay action
-        $( "#presentlist" ).bind( "sortstop", function(event, ui) {
+        presentlist.bind( "sortstop", function(event, ui) {
             if (Math.abs(ui.offset.left - ui.originalPosition.left)>70){
                 socket.emit("delete", {"index": ui.item.index()});
                 // Meteen weggooien, want trage update is lelijk
@@ -159,14 +162,14 @@
         });
 
         // Als iemand sleur en pleur doet
-        $( "#effectlist" ).bind( "sortstop", function(event, ui) {
+        effectlist.bind( "sortstop", function(event, ui) {
             if (Math.abs(ui.offset.left - ui.originalPosition.left)>70) {
                 socket.emit("deleteeffect", {"name": ui.item.contents().get(0).nodeValue});
             }
         })
 
         // Vul de form elementen uit de cookie
-        playerName = getCookie("player")
+        var playerName = getCookie("player")
         if(playerName) {
             $("#monster_name").val(playerName)
             $("#monster_bonus").val(getCookie("playerinit"))
@@ -241,13 +244,13 @@
         // Vang status af en ververs tabel
        socket.on('newstate', function(msg) {
             if(msg.initiatives_timestamp != initiatives_timestamp) {
-                initiatives = msg.initiatives
+                var initiatives = msg.initiatives
                 $("#presentlist").empty()
                 $(initiatives).each(function (idx) {
                     add_list_initiative(this.name, this.total, this.turn)
                 })
                 $("#presentlist").listview("refresh")
-                roundtext = "Round " + (msg.round == 0 ? "-" : msg.round)
+                var roundtext = "Round " + (msg.round == 0 ? "-" : msg.round)
                 $("#roundcounter").text(roundtext)
                 initiatives_timestamp = msg.initiatives_timestamp
             }
@@ -256,7 +259,7 @@
        // Vang status af en ververs tabel
        socket.on('neweffects', function(msg) {
             if(msg.effects_timestamp != effects_timestamp) {
-                effects = msg.effects
+                var effects = msg.effects
                 $("#effectlist").empty()
                 $(effects).each(function (idx) {
                     add_list_effect(this.name, this.rounds)

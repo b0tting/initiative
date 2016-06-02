@@ -84,9 +84,9 @@ class GameState:
     def remove_initiative(self, index):
         self.initiatives_timestamp = time.time()
         init = self.initiatives.pop(index)
-        if(init.turn):
+        if init.turn:
             ## Net 1 gepopt
-            if(index <= len(self.initiatives)):
+            if index <= len(self.initiatives):
                 self.set_current(index)
             else:
                 self.set_current(0)
@@ -100,6 +100,7 @@ class GameState:
 
     def next_initiative(self):
         self.initiatives_timestamp = time.time()
+        effects_change = False
         if len(self.initiatives) > 0:
             current_index = self.get_current()
             if current_index + 1 < len(self.initiatives):
@@ -109,11 +110,16 @@ class GameState:
                 self.round += 1
                 for eff in self.effects:
                     eff.duration -= 1
-                trigger_effects_update_message()
+                effects_change = True
             self.set_current(new_index)
+        if effects_change:
+            self.effects_timestamp = time.time()
+
+        return effects_change
 
     def rollback_initiative(self):
         self.initiatives_timestamp = time.time()
+        effects_change = False
         if len(self.initiatives) > 0:
             current_index = self.get_current()
             if current_index - 1 < 0:
@@ -122,11 +128,17 @@ class GameState:
                     self.round -= 1
                     for eff in self.effects:
                         eff.duration += 1
-                    trigger_effects_update_message()
+                    effects_change = True
                     self.set_current(new_index)
             else:
                 new_index = current_index - 1
                 self.set_current(new_index)
+
+        if effects_change:
+            self.effects_timestamp = time.time()
+
+        return effects_change
+
 
     def get_effects_dict(self):
         return [{"name": eff.name, "rounds": eff.duration if eff.duration > 0 else 0} for eff in self.effects]
@@ -165,12 +177,16 @@ def move_initative(data):
 
 @socketio.on('next', namespace='/state')
 def next_initiative():
-    effects.next_initiative()
+    # Returns True if effects should also trigger
+    if effects.next_initiative():
+        trigger_effects_update_message()
     trigger_initiative_update_message()
 
 @socketio.on('rollback_next', namespace='/state')
 def former_initiative():
-    effects.rollback_initiative()
+    # Returns True if effects should also trigger
+    if effects.rollback_initiative():
+        trigger_effects_update_message()
     trigger_initiative_update_message()
 
 @socketio.on('clear', namespace='/state')
