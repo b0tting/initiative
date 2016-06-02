@@ -27,7 +27,7 @@
 	<div data-role="header">
         <button id="clear" data-icon="delete">Clear</button>
 		<h1>Initiative!</h1>
-        <button id="roundcounter" data-disabled="true">Round -</button>
+        <button id="roundcounter" data-icon="bars" data-iconpos="right">Round -</button>
 	</div><!-- /header -->
 
 	<div data-role="content">
@@ -109,6 +109,16 @@
         }
     }
 
+    function hide_your_children() {
+        if($("#presentlist").attr("mini")) {
+            $("#presentlist li").hide()
+	        $("#presentlist li[highlight='true']").show()
+        } else {
+            $("#presentlist li").show()
+        }
+    }
+
+
     // Basic cookie stuff, very uninteresting
     function setCookie(key, value) {
             var expires = new Date();
@@ -176,11 +186,13 @@
             $("#effect_duration").val(getCookie("effectduration") ? getCookie("effectduration") : 0)
         }
 
-
         $( "#roundcounter" ).bind( "click", function(event, ui) {
-            $( "#presentlist li").hide()
-            $( "#presentlist li").show()
-
+            if($("#presentlist").attr("mini") || $( "#presentlist li").size() == 0) {
+                $("#presentlist").removeAttr("mini")
+            } else {
+                $("#presentlist").attr("mini", "true")
+            }
+            hide_your_children()
         })
 
         // Als iemand op NEXT klikt, rol dan door naar de volgende
@@ -250,6 +262,7 @@
                     add_list_initiative(this.name, this.total, this.turn)
                 })
                 $("#presentlist").listview("refresh")
+                hide_your_children()
                 var roundtext = "Round " + (msg.round == 0 ? "-" : msg.round)
                 $("#roundcounter").text(roundtext)
                 initiatives_timestamp = msg.initiatives_timestamp
@@ -278,6 +291,5 @@
         socket.emit('getstate', {});
     });
 </script>
-
 </body>
 </html>
