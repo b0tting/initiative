@@ -11,15 +11,19 @@
 	<script src="static/js/jquery.mobile-1.4.5.min.js"></script>
     <script src="static/js/jquery.ui.touch-punch.min.js"></script>
     <script src="static/js/socket.io.min.js"></script>
-</head>
-<style>
-    .ui-page {
-        background: #000;
-        background-image:url(static/css/images/bg.png);
-        background-size:cover;
-    }
+    <script src="static/js/jquery-visibility.js"></script>
+    <style>
+        .ui-page {
+            background: #000;
+            background-image:url(static/css/images/bg.png);
+            background-size:cover;
+        }
 
-</style>
+        .key_button::first-letter {
+            text-decoration: underline;
+        }
+    </style>
+</head>
 <body> 
 
 <div data-role="page">
@@ -27,7 +31,7 @@
 	<div data-role="header">
         <button id="clear" data-icon="delete">Clear</button>
 		<h1>Initiative!</h1>
-        <button id="roundcounter" data-icon="bars" data-iconpos="right">Round -</button>
+        <button id="roundcounter" data-icon="bars" data-iconpos="right" class="key_button">Round -</button>
 	</div><!-- /header -->
 
 	<div data-role="content">
@@ -37,11 +41,11 @@
         <div class="ui-grid-a">
             <div class="ui-block-a">
                     <button id="newinit" data-mini="true" data-icon="action">Add initative</button>
-                    <button id="previous" data-mini="true" data-icon="back">Previous</button>
+                    <button id="previous" data-mini="true" data-icon="back" class="key_button">Previous</button>
             </div>
             <div class="ui-block-b">
                 <button id="neweffect" data-mini="true" data-icon="action" data-iconpos="right">Add effect</button>
-                <button id="next" data-mini="true" data-icon="forward" data-iconpos="right">Next</button>
+                <button id="next" data-mini="true" data-icon="forward" data-iconpos="right" class="key_button">Next</button>
             </div>
         </div>
 
@@ -148,13 +152,13 @@
         effectlist.sortable()
         effectlist.disableSelection();
 
-        <!-- Refresh list to the end of sort to have a correct display -->
+        // All aboard the websocket train!
+        var socket = io.connect('http://'+location.host+'/state');
+
+        // Refresh list to the end of sort to have a correct display
         presentlist.bind( "sortstart", function(event, ui) {
             old_index = ui.item.index()
         });
-
-        // All aboard the websocket train!
-        var socket = io.connect('http://'+location.host+'/state');
 
         // So when someone stops dragging, two things can be the case. Either the item has been dragged to the side.
         // In that case, We call it a swipe and delete it.
@@ -205,6 +209,18 @@
         $( "#previous" ).bind( "click", function(event, ui) {
             socket.emit('rollback_next');
         })
+
+
+        // En registreer de N en de spatie om NEXT te klikken en de P om terug te rollen
+        $(document).keypress(function(e) {
+            if(e.which  == 110 || e.which  == 32 || e.which == 0 ) {
+                $( "#next" ).trigger("click")
+            } else if(e.which  == 112) {
+                $( "#previous" ).trigger("click")
+            } else if(e.which == 114) {
+                $( "#roundcounter" ).trigger("click")
+            }
+        });
 
         // De Clear knop gooit leeg
         $( "#clear" ).bind( "click", function(event, ui) {
@@ -283,7 +299,7 @@
         });
 
         // We hebben misschien een update gemist als de user weg klikt
-        $(window).focus(function(e) {
+        $(document).on('show', function() {
             socket.emit('getstate', {"effects_timestamp":effects_timestamp, "initiatives_timestamp":initiatives_timestamp});
         });
 
