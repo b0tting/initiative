@@ -6,9 +6,9 @@
     <link rel="stylesheet" href="static/css/jquery.mobile-1.4.5.min.css" />
     <link rel="stylesheet" href="static/css/jquery-ui.css" />
     <link rel="stylesheet" href="static/css/pf_init.min.css" />
-	<script src="static/js/jquery-2.1.1.min.js"></script>
+    <script src="static/js/jquery-2.1.1.min.js"></script>
     <script src="static/js/jquery-ui.min.js"></script>
-	<script src="static/js/jquery.mobile-1.4.5.min.js"></script>
+    <script src="static/js/jquery.mobile-1.4.5.min.js"></script>
     <script src="static/js/jquery.ui.touch-punch.min.js"></script>
     <script src="static/js/socket.io.min.js"></script>
     <script src="static/js/jquery-visibility.js"></script>
@@ -126,7 +126,7 @@
     // Basic cookie stuff, very uninteresting
     function setCookie(key, value) {
             var expires = new Date();
-            expires.setTime(expires.getTime() + (1 * 24 * 60 * 60 * 1000));
+            expires.setDate(expires.getDate() + 365);
             document.cookie = key + '=' + value + ';expires=' + expires.toUTCString();
         }
 

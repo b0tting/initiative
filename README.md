@@ -52,6 +52,8 @@ By default, the webserver starts on port 85. Change this in the last line of pre
 </VirtualHost>
 
 ```
+You cannot run this application as an WSGI application, or at least I could not, because the gevent handler cannot be found or cannot be started. 
+
 
 # Technology
 Python flask, running a jquery mobile webpage, communicating over websockets using timestamped messsages. I included the original themeroller theme (http://jqueryui.com/themeroller/) so you can roll your own. 
