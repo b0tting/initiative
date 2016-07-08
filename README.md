@@ -41,18 +41,32 @@ By default, the webserver starts on port 85. Change this in the last line of pre
   ProxyPreserveHost On
   RewriteEngine on
   ProxyRequests Off
-  
-  RewriteCond %{QUERY_STRING} transport=polling
-  ### Use the IP running the present.py webserver
-  RewriteRule /(.*)$ http://127.0.0.1:85/$1 [P]
+  ServerName init.yourserver.com
+  DocumentRoot /usr/local/initiative/static
 
-  ProxyPass /socket.io ws://127.0.0.1:85/socket.io/
-  ProxyPass / http://127.0.0.1:85/
-  ProxyPassReverse / http://127.0.0.1:85/
+  <FilesMatch "\.(jpg|jpeg|png|gif|js|css)$">
+    Header set Cache-Control "max-age=290304000, public"
+  </FilesMatch>
+
+  Alias "/static" "/usr/local/initiative/static"
+  <Directory "/usr/local/initiative/static">
+    Require all granted
+  </Directory>
+
+    RewriteCond %{QUERY_STRING} transport=polling
+    RewriteRule /(.*)$ http://127.0.0.1:85/$1 [P]
+
+    ProxyPass /socket.io ws://127.0.0.1:85/socket.io/
+
+    ProxyPassMatch ^/static !
+    ProxyPass / http://127.0.0.1:85/
+    ProxyPassReverse / http://127.0.0.1:85/
+
 </VirtualHost>
 
+
 ```
-You cannot run this application as an WSGI application, or at least I could not, because the gevent handler cannot be found or cannot be started. 
+Note that this configuration serves the static files from a seperate location instead of using the Python webserver. You cannot run this application as an WSGI application, or at least I could not, because the gevent handler cannot be found or cannot be started. 
 
 
 # Technology
