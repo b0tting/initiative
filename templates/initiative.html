@@ -6,9 +6,9 @@
     <link rel="stylesheet" href="static/css/jquery.mobile-1.4.5.min.css" />
     <link rel="stylesheet" href="static/css/jquery-ui.css" />
     <link rel="stylesheet" href="static/css/pf_init.min.css" />
-    <script src="static/js/jquery-2.1.1.min.js"></script>
+	<script src="static/js/jquery-2.1.1.min.js"></script>
     <script src="static/js/jquery-ui.min.js"></script>
-    <script src="static/js/jquery.mobile-1.4.5.min.js"></script>
+	<script src="static/js/jquery.mobile-1.4.5.min.js"></script>
     <script src="static/js/jquery.ui.touch-punch.min.js"></script>
     <script src="static/js/socket.io.min.js"></script>
     <script src="static/js/jquery-visibility.js"></script>
@@ -30,7 +30,7 @@
 
 	<div data-role="header">
         <button id="clear" data-icon="delete">Clear</button>
-		<h1>Initiative!</h1>
+		<h1 id="title">Initiative!</h1>
         <button id="roundcounter" data-icon="bars" data-iconpos="right" class="key_button">Round -</button>
 	</div><!-- /header -->
 
@@ -83,6 +83,12 @@
       </div>
     </div>
 
+        <!-- Sound taken from http://test.freesound.org/people/looppool/sounds/13119/  - thank you for sharing! -->
+        <audio id="ding" autostart="false">
+            <source src="/static/sounds/13119__looppool__bell-blip.wav" >
+            <source src="/static/sounds/13119__looppool__bell-blip.mp3" >
+            <source src="/static/sounds/13119__looppool__bell-blip.ogg" >
+        </audio>
 </div><!-- /page -->
 <script language="javascript">
     // Draw an additional initiative in the list
@@ -122,6 +128,17 @@
         }
     }
 
+    // Functie om een ding te doen als de browser tab inactive is
+    var ding_timestamp = 0
+    function ding() {
+        var now = Math.round(Date.now());
+        if(now - ding_timestamp > 2000 ) {
+            if (document.hidden) {
+                $("#ding").trigger("play")
+            }
+            ding_timestamp = now
+        }
+    }
 
     // Basic cookie stuff, very uninteresting
     function setCookie(key, value) {
@@ -140,7 +157,12 @@
     var socket
     var effects_timestamp = 0
     var initiatives_timestamp = 0
+
+    {# Deze variabele is de linking pin tussen pagina en applicatie! #}
+    var session = "{{ session }}"
     $(document).bind('pageinit', function() {
+        $( "#title").text($( "#title").text() + " (" + session + ")")
+        document.title = document.title + " ("  + session + ")"
         // Zaken om de boel sorteerbaar te houden
         var presentlist = $( "#presentlist" )
         var effectlist = $( "#effectlist" )
@@ -165,12 +187,12 @@
         // Else, check if our index has changed courtesy of jquery mobile. In that case, it's a player delay action
         presentlist.bind( "sortstop", function(event, ui) {
             if (Math.abs(ui.offset.left - ui.originalPosition.left)>70){
-                socket.emit("delete", {"index": ui.item.index()});
+                socket.emit("delete", {"session": session, "index": ui.item.index()});
                 // Meteen weggooien, want trage update is lelijk
                 $( "#presentlist li").eq(ui.item.index()).remove();
             } else if (old_index != ui.item.index()) {
                 // Oh, dit is een delay..
-                socket.emit("move", {"old_index": old_index, "new_index":ui.item.index()});
+                socket.emit("move", {"session":session, "old_index": old_index, "new_index":ui.item.index()});
             }
             old_index = -1
         });
@@ -178,7 +200,7 @@
         // Als iemand sleur en pleur doet
         effectlist.bind( "sortstop", function(event, ui) {
             if (Math.abs(ui.offset.left - ui.originalPosition.left)>70) {
-                socket.emit("deleteeffect", {"name": ui.item.contents().get(0).nodeValue});
+                socket.emit("deleteeffect", {"session":session,"name": ui.item.contents().get(0).nodeValue});
             }
         })
 
@@ -202,12 +224,12 @@
         // Als iemand op NEXT klikt, rol dan door naar de volgende
         $( "#next" ).bind( "click", function(event, ui) {
             if($( "#presentlist li").size() > 0) {
-                socket.emit('next');
+                socket.emit('next',{"session":session});
             }
         })
 
         $( "#previous" ).bind( "click", function(event, ui) {
-            socket.emit('rollback_next');
+            socket.emit('rollback_next', {"session":session});
         })
 
 
@@ -229,7 +251,7 @@
 
         $("#clearconfirm").bind("click", function(event, ui){
             $("#presentlist").empty()
-            socket.emit("clear");
+            socket.emit("clear", {"session":session});
         })
 
         // Open de popup
@@ -254,7 +276,7 @@
             if($("#monster_name").val()) {
                 setCookie("player", $("#monster_name").val())
                 setCookie("playerinit", $("#monster_bonus").val())
-                socket.emit("add",{"name":$("#monster_name").val(),"bonus": $("#monster_bonus").val(), "roll":$("#monster_roll").val()})
+                socket.emit("add",{"session":session,"name":$("#monster_name").val(),"bonus": $("#monster_bonus").val(), "roll":$("#monster_roll").val()})
                 // Vroeger trok ik alvast een fake extra regel erbij, maar met websockets is dat niet meer nodig
                 $("#popupBasic").popup("close")
             }
@@ -264,14 +286,14 @@
         $( "#killpopupEffect" ).bind( "click", function(event, ui) {
             if($("#effect_name").val()) {
                 setCookie("effectduration", $("#effect_duration").val())
-                socket.emit("addeffect",{"name":$("#effect_name").val(),"duration": $("#effect_duration").val()})
+                socket.emit("addeffect",{"session":session,"name":$("#effect_name").val(),"duration": $("#effect_duration").val()})
                 $("#popupEffect").popup("close")
             }
         });
 
         // Vang status af en ververs tabel
        socket.on('newstate', function(msg) {
-            if(msg.initiatives_timestamp != initiatives_timestamp) {
+            if(msg.initiatives_timestamp != initiatives_timestamp && msg.session == session) {
                 var initiatives = msg.initiatives
                 $("#presentlist").empty()
                 $(initiatives).each(function (idx) {
@@ -282,12 +304,13 @@
                 var roundtext = "Round " + (msg.round == 0 ? "-" : msg.round)
                 $("#roundcounter").text(roundtext)
                 initiatives_timestamp = msg.initiatives_timestamp
+                ding()
             }
         });
 
        // Vang status af en ververs tabel
        socket.on('neweffects', function(msg) {
-            if(msg.effects_timestamp != effects_timestamp) {
+            if(msg.effects_timestamp != effects_timestamp && msg.session == session) {
                 var effects = msg.effects
                 $("#effectlist").empty()
                 $(effects).each(function (idx) {
@@ -295,16 +318,17 @@
                 })
                 $("#effectlist").listview("refresh")
                 effects_timestamp = msg.effects_timestamp
+                ding()
             }
         });
 
         // We hebben misschien een update gemist als de user weg klikt
         $(document).on('show', function() {
-            socket.emit('getstate', {"effects_timestamp":effects_timestamp, "initiatives_timestamp":initiatives_timestamp});
+            socket.emit('getstate', {"session":session,"effects_timestamp":effects_timestamp, "initiatives_timestamp":initiatives_timestamp});
         });
 
         // Init gedaan, gooi die websocket op en wacht gespannen af!
-        socket.emit('getstate', {});
+        socket.emit('getstate', {"session":session});
     });
 </script>
 </body>

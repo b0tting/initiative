@@ -1,0 +1,76 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Initiative!</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="static/css/jquery.mobile-1.4.5.min.css" />
+    <link rel="stylesheet" href="static/css/jquery-ui.css" />
+    <link rel="stylesheet" href="static/css/pf_init.min.css" />
+	<script src="static/js/jquery-2.1.1.min.js"></script>
+    <script src="static/js/jquery-ui.min.js"></script>
+	<script src="static/js/jquery.mobile-1.4.5.min.js"></script>
+    <script src="static/js/jquery.ui.touch-punch.min.js"></script>
+    <script src="static/js/socket.io.min.js"></script>
+    <script src="static/js/jquery-visibility.js"></script>
+    <style>
+        .ui-page {
+            background: #000;
+            background-image:url(static/css/images/bg.png);
+            background-size:cover;
+        }
+    </style>
+</head>
+<body> 
+
+<div data-role="page">
+
+	<div data-role="header">
+		<h1>Initiative!</h1>
+	</div><!-- /header -->
+<div data-role="content">
+
+        <div data-role="popup" id="welcome_popup" class="ui-content" data-position-to="window" data-dismissible="false">
+            <p>Welcome to the initiative app. To get started, simply enter a session name. A new one will be created for you if one does not exist yet. Share the session with others to have them join.</p>
+            <p>
+                <input type="text" id="session" placeholder="Session name" data-cleared-btn="true">
+                <button id="submit_session" disabled>Start!</button>
+            </p>
+            <p>Some suggestions:</p>
+                <ul>
+            {% for suggestion in suggestions %}
+                <li><a href="/{{  suggestion  }}" data-ajax="false">{{  suggestion  }}</a></li>
+            {% endfor %}</ul>
+            <p>More detailed documents on this app can be found at the <a href="https://github.com/b0tting/initiative">Github repo</a>.</p>
+        </div>
+</div>
+</div><!-- /page -->
+<script language="javascript">
+        $(document).bind('pageinit', function() {
+            $("#session").textinput({
+                 clearBtn: true
+            });
+
+            $("#submit_session").bind( "click", function(event, ui) {
+                window.location.href = "/" + $("#session").val();
+            })
+
+            var patt = /^([\w\d_-]){3,}$/g
+            $('#session').on("keyup", function(){
+                if(patt.test($("#session").val())) {
+                    $("#submit_session").prop("disabled", false)
+                } else {
+                     $("#submit_session").prop("disabled", true)
+                }
+            })
+
+            $("#welcome_popup").popup("open");
+        })
+
+           $(document).bind('pageshow', function() {
+               $("#welcome_popup").popup('open')
+               $("#welcome_popup").popup('reposition', 'positionTo: window');
+           })
+</script>
+
+</body>
+</html>
