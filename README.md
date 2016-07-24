@@ -15,13 +15,19 @@ An example of play:
 - Bob: "You're up now, Alice"
 
 # Loose rules
-The app ís run on a small webserver that send updates to all connected browsers. Every player can add new entries, roll turns and add "effects" such as spells or whatever the DM wants. The app does not enforce rules to allow players to bend and fudge the story in whatever way suits them. Yes, this allows for cheating, but if your friends want to cheat their DM in a sunday night kitchen table game you have bigger problems (and a need for better friends).
+The app is run on a small webserver that send updates to all connected browsers. Every player can add new entries, roll turns and add "effects" such as spells or whatever the DM wants. The app does not enforce rules to allow players to bend and fudge the story in whatever way suits them. Yes, this allows for cheating, but if your friends want to cheat their DM in a sunday night kitchen table game you have bigger problems (and a need for better friends).
 
+Features: 
 - add your initiative and either roll a die or have the app roll it for you
 - remembers the player in the current browser for easier adding in a next combat
 - drag character up or down for the "delay" action
 - swipe entries left or right to delete them
 - click the "round" button on top to only show the initiative that is currently up
+- Shortcuts for common actions (N for next initiative, for example)
+- Friendly beeps if the initiative changes while another browser tab is active (also known as "the facebook beep" for multiple reasons..)
+- Seperate session rooms
+
+One thing to note is that session states live in the memory of the app and are not persistent. If the app restarts, the initative sessions are lost. 
 
 # Installation
 This web server is dependent on the flask-socketio and gevent libraries. Assuming you have installed pip:
