@@ -33,7 +33,7 @@
             <p>Welcome to the initiative app. To get started, simply enter a session name. A new one will be created for you if one does not exist yet. Share the session with others to have them join.</p>
             <p>
                 <input type="text" id="session" placeholder="Session name" data-cleared-btn="true">
-                <button id="submit_session" disabled>Start!</button>
+                <div id="submit_session">Start!</div>
             </p>
             <p>Some suggestions:</p>
                 <ul>
@@ -45,7 +45,8 @@
 </div>
 </div><!-- /page -->
 <script language="javascript">
-        $(document).bind('pageinit', function() {
+var patt =  /^[\w\d_-]{3,}/
+        $(document).on('pageinit', function() {
             $("#session").textinput({
                  clearBtn: true
             });
@@ -54,12 +55,13 @@
                 window.location.href = "/" + $("#session").val();
             })
 
-            var patt = /^([\w\d_-]){3,}$/g
+            $("#submit_session").button().button("disable")
             $('#session').on("keyup", function(){
-                if(patt.test($("#session").val())) {
-                    $("#submit_session").prop("disabled", false)
+		value = $("#session").val()
+                if(patt.test(value)) {
+                    $("#submit_session").button("enable")
                 } else {
-                     $("#submit_session").prop("disabled", true)
+                     $("#submit_session").button("disable")
                 }
             })
         })
