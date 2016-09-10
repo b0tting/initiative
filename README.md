@@ -4,6 +4,7 @@ We like playing D20 based roleplaying games - Pathfinder, Dungeons and Dragons 3
 These discussions take the speed out of the game, a problem this application tries to solve by delegating responsibility to the players instead of the game master. All of the players can call up the state on their tablet or smartphone. All players can edit the game state and run the order of battle, calling of rounds and round based effects.
  
 ![Alt text](/static/css/images/screenshot.png?raw=true "App screenshot")
+
 Features: 
 - add your initiative and either roll a die or have the app roll it for you
 - remembers the player in the current browser for easier adding in a next combat
@@ -14,7 +15,12 @@ Features:
 - Friendly beeps if the initiative changes while another browser tab is active (also known as "the facebook beep" for multiple reasons..)
 - Seperate session rooms
 
-All of the players open the same session, by either entering the same session name in the welcome screen or directly adding the session name to the URL. They then enter their initative by clicking on the "Add initative" button. The application has already rolled a D20 for them, but the player is free to roll his own and adjust the slider accordingly. After every actor has been added one of the players clicks the "Next" button to actually start the rounds. Optionally, the player clicks "Add effect" to add something that lasts a set number of rounds, such as a spell or a cooldown timer. Turns can be rolled back by using the "Previous" button. 
+# Instructions
+All of the players open the same session, by either entering the same session name in the welcome screen or directly adding the session name to the URL. They then enter their initative by clicking on the "Add initative" button. The application has already rolled a D20 for them, but the player is free to roll his own and adjust the slider accordingly. 
+
+After every actor has been added one of the players clicks the "Next" button to actually start the rounds. 
+
+Optionally, the player clicks "Add effect" to add something that lasts a set number of rounds, such as a spell or a cooldown timer. Turns can be rolled back by using the "Previous" button. 
 
 An example of play: 
 - DM: "You step on a branch. The loud crack does not seem to surprise the orc, who had already nocked an arrow. He turns around to face you."
