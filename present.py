@@ -15,15 +15,15 @@ log = logging.getLogger("initiative")
 handler = logging.StreamHandler()
 log.addHandler(handler)
 
-## pip install flask-socketio gevent gevent-websocket
-
 suggestions = ["abnormal","abracadabra","adventure","alchemy","allegorical","allusion","amulet","apparition","apprentice","atmosphere","attraction","awe","beast","beauty","belief","berserk","bewitch","bizarre","black cat","blindfold","bogeyman","brew","brownies","captivate","cast","castles","cauldron","cave","chalice","changeling","characters","charisma","charming","chimerical","clairvoyant","clarity","classic","cliffs","clock","collapse","comic","compare","conjure","conspirator","creative","creature","crisis","crow","cruelty","crystal ball","curious","curse","dancing","daring","dazzle","deeds","deformity","delirious","demon","detect","detection","detective","disappearance","disaster","dose","dragon","dramatic","dread","dream","dwarf","eek","eerie","elf","empire","enchanting","esp","event","evil","experience","fable","fabricate","fairy","fairy","fairy ring","fairy tale","familiar","fanciful","fantastic","fantasy","fascination","favors","fiction","fiery","figment","folklore","foolishness","forces","forgery","garb","gestures","ghost","giant","gifts","glimmer","gnome","goblin","godmother","gowns","grateful","graveyard","green","grimm","grotesque","hag","hallucinate","harbinger","helpful","herbs","heroic","hollow","horror","howls","humped","idyll","illusions","image","imagery","imaginary","imagination","imp","impressive","improvise","impulse","incantation","incognito","informative","ingenious","inspiration","invisible","jargon","jaunt","jiggle","joking","keepsake","kettle","kidnap","king","kingdom","lands","legend","legerdemain","leprechauns","lore","lucky","lunar","magic","carpet","magical","magician","majesty","malevolence","mask","medieval","medium","miracle","mischief","mischievous","misshapen","monster","moon","muse","musings","mysterious","mystery","mystical","myth","mythical","narration","nature","necromancer","necromancy","nemesis","newt","notion","oberon","odd","ogre","oracle","otherworldly","overpower","overwhelm","owl","pattern","perform","petrify","pixie","pixie dust","plot","poisonous","potent","potion","powder","power","prey","prince","prophet","protection","prowl","quail","quake","quash","quaver","queen","quest","question","quizzical","raconteur","rage","realm","reasoning","reference","reign","repel","reveal","robe","rule","sage","sandman","scare","scold","scroll","seeking","seer","setting","shaman","soothsayer","sorcerer","sorcery","specter","speculation","spell","spider","spirits","stars","story","substitution","supernatural","superstition","talisman","terror","theory","thrilling","torch","tragic","transform","tremors","tricks","troll","unbelievable","unexplained","unicorn","unique","unusual","valiant","valor","vampire","vanguard","vanish","vanquish","variety","venomous","version","vice","vicious","victim","visionary","vital","wail","wand","ward","watchful","weird","werewolf","western","whim","whimsical","whine","whisk","whispers","white","wicked","willies","win","wince","wisdom","wish","witch","worry","worship","wrinkled","wrongdoing","xanadu","yearn","yesteryear","youth","yowl","zap","zealous","zigzag"]
-def get_suggestions():
+def get_suggestions(existing_sessions):
     new_suggestions = []
     i = 0
     while i < 5:
-        new_suggestions.append(random.choice(suggestions) + str(random.randint(1, 10)))
-        i += 1
+        new_suggestion = random.choice(suggestions) + str(random.randint(1, 10))
+        if new_suggestion not in existing_sessions:
+            new_suggestions.append(new_suggestion)
+            i += 1
     return new_suggestions
 
 class Initiative:
@@ -93,7 +93,7 @@ class GameState:
         self.initiatives[:] = []
         self.round = 0
 
-    ## Vals spsler! Als er meerdere "bless" effecten zijn wordt nu altijd de eerste verwijderd!
+    ## Vals speler! Als er meerdere "bless" effecten zijn wordt nu altijd de eerste verwijderd!
     def remove_effect(self, name):
         self.effects_timestamp = time.time()
         i = 0
@@ -211,6 +211,9 @@ class InitiativeApp:
         self.gamestates[session] = gamestate
         return gamestate
 
+    def get_gamestate_names(self):
+        return self.gamestates.keys();
+
 @socketio.on('deleteeffect', namespace='/state')
 def delete_effect(data):
     gamestate = init.get_gamestate_from_data(data)
@@ -284,7 +287,7 @@ def versus_the_world(session = None):
         gamestate = init.get_gamestate(session.lower())
         return render_template('initiative.html', session=gamestate.session)
     else:
-        return render_template('welcome.html', suggestions=get_suggestions())
+        return render_template('welcome.html', suggestions=get_suggestions(init.get_gamestate_names()))
 
 @socketio.on('add', namespace='/state')
 def add_initiative(data):
