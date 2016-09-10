@@ -46,25 +46,31 @@
 </div><!-- /page -->
 <script language="javascript">
 var patt =  /^[\w\d_-]{3,}/
-        $(document).on('pageinit', function() {
-            $("#session").textinput({
-                 clearBtn: true
-            });
+function validate_session_name() {
+    value  = $("#session").val().toLowerCase()
+    $("#session").val(value)
+    if(patt.test(value)) {
+        $("#submit_session").button("enable")
+    } else {
+         $("#submit_session").button("disable")
+    }
+}
 
-            $("#submit_session").bind( "click", function(event, ui) {
-                window.location.href = "/" + $("#session").val();
-            })
+$(document).bind('pageinit', function() {
+    $("#session").textinput({
+         clearBtn: true
+    });
 
-            $("#submit_session").button().button("disable")
-            $('#session').on("keyup", function(){
-		value = $("#session").val()
-                if(patt.test(value)) {
-                    $("#submit_session").button("enable")
-                } else {
-                     $("#submit_session").button("disable")
-                }
-            })
-        })
+    $("#submit_session").bind( "click", function(event, ui) {
+        window.location.href = "/" + $("#session").val();
+    })
+
+    $("#submit_session").button().button("disable")
+    validate_session_name()
+    $('#session').on("keyup", function(){
+        validate_session_name()
+    })
+})
 </script>
 
 </body>

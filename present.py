@@ -190,8 +190,12 @@ class InitiativeApp:
         return self.session_validator.match(session)
 
     def get_gamestate_from_data(self,data):
-        if "session" in data and self.session_validate(data["session"]):
-            return self.get_gamestate(data["session"])
+        if "session" in data:
+            session = data["session"].lower()
+            if self.session_validate(session):
+                return self.get_gamestate(session)
+            else:
+                return None
         else:
             return None
 
@@ -277,7 +281,7 @@ def trigger_effects_update_message(gamestate):
 @app.route('/')
 def versus_the_world(session = None):
     if session is not None:
-        gamestate = init.get_gamestate(session)
+        gamestate = init.get_gamestate(session.lower())
         return render_template('initiative.html', session=gamestate.session)
     else:
         return render_template('welcome.html', suggestions=get_suggestions())
