@@ -32,7 +32,7 @@ One thing to note is that session states live in the memory of the app and are n
 # Installation
 This web server is dependent on the flask-socketio and gevent libraries. Assuming you have installed pip:
 ```sh
-pip install flask-socketio gevent gevent-websocket
+pip install -r requirements.txt 
 ```
 Note that the gevent installation will fail on Windows. The error message will direct you to install a VC++ package, which will solve this problem. 
 
@@ -40,6 +40,7 @@ Run the script by starting with python:
 ```sh
 python present.py
 ````
+
 # Webserver
 By default, the webserver starts on port 85. Change this in the last line of present.py. This application is based on websockets, which will give you some trouble if you want to proxy from an apache machine. In that case, assuming you already have an Apache 2.4 and proxy_wstunnel, you can use the following configuration: 
 ```
