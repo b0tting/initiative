@@ -30,7 +30,7 @@
 <div data-role="content">
 
     <div>
-            <p>Welcome to the initiative app. To get started, simply enter a session name. A new one will be created for you if one does not exist yet. Share the session with others to have them join.</p>
+            <p>Welcome to the initiative app. To get started, simply enter a game name to be sent to your session. A new one will be created for you if one does not exist yet. Share the game name with others to have them join.</p>
             <p>
                 <input type="text" id="session" placeholder="Session name" data-cleared-btn="true">
                 <div id="submit_session">Start!</div>
@@ -40,7 +40,7 @@
             {% for suggestion in suggestions %}
                 <li><a href="/{{  suggestion  }}" data-ajax="false">{{  suggestion  }}</a></li>
             {% endfor %}</ul>
-            <p>More detailed documents on this app can be found at the <a href="https://github.com/b0tting/initiative">Github repo</a>.</p>
+            <p>An explanation and the features of this tool can be found at the <a href="https://github.com/b0tting/initiative">Github repo</a>.</p>
     </div>
 </div>
 </div><!-- /page -->

@@ -1,9 +1,20 @@
 # Initiative!
-We like playing D20 based roleplaying games - Pathfinder, Dungeons and Dragons 3rd edition, D&D Next, etcetera. A lot of time goes into combat administration. We continually spend time figuring out the order of initiatie. Whose turn is it? Bob again? But shouldn't Alice have gone first? 
+We like playing D20 based roleplaying games - Pathfinder, Dungeons and Dragons 3rd edition, D&D Next, etcetera. A lot of time goes into combat administration as we are figuring out the order of initiative. Whose turn is it? Bob again? But shouldn't Alice have gone first? 
 
-These discussions take the speed out of the game, a problem this page tries to solve by delegating to players. All of the players can call up the same state on their tablet or smartphone. All players can edit the game state allowing the DM to delegate the calling of rounds and round based effect to them. 
+These discussions take the speed out of the game, a problem this application tries to solve by delegating responsibility to the players instead of the game master. All of the players can call up the state on their tablet or smartphone. All players can edit the game state and run the order of battle, calling of rounds and round based effects.
+ 
+![Alt text](/static/css/images/screenshot.png?raw=true "App screenshot")
+Features: 
+- add your initiative and either roll a die or have the app roll it for you
+- remembers the player in the current browser for easier adding in a next combat
+- drag character up or down for the "delay" action
+- swipe entries left or right to delete them
+- click the "round" button on top to only show the initiative that is currently up
+- Shortcuts for common actions (N for next initiative, for example)
+- Friendly beeps if the initiative changes while another browser tab is active (also known as "the facebook beep" for multiple reasons..)
+- Seperate session rooms
 
-![Alt text](/static/css/images/screenshot.png?raw=true "App screeshot")
+All of the players open the same session, by either entering the same session name in the welcome screen or directly adding the session name to the URL. They then enter their initative by clicking on the "Add initative" button. The application has already rolled a D20 for them, but the player is free to roll his own and adjust the slider accordingly. After every actor has been added one of the players clicks the "Next" button to actually start the rounds. Optionally, the player clicks "Add effect" to add something that lasts a set number of rounds, such as a spell or a cooldown timer. Turns can be rolled back by using the "Previous" button. 
 
 An example of play: 
 - DM: "You step on a branch. The loud crack does not seem to surprise the orc, who had already nocked an arrow. He turns around to face you."
@@ -15,17 +26,8 @@ An example of play:
 - Bob: "You're up now, Alice"
 
 # Loose rules
-The app is run on a small webserver that send updates to all connected browsers. Every player can add new entries, roll turns and add "effects" such as spells or whatever the DM wants. The app does not enforce rules to allow players to bend and fudge the story in whatever way suits them. Yes, this allows for cheating, but if your friends want to cheat their DM in a sunday night kitchen table game you have bigger problems (and a need for better friends).
+The app is run on a small webserver that send updates to all connected browsers. Every player can add new entries, roll turns and add "effects" such as spells or whatever the DM wants. The app does not enforce rules to allow players to bend and fudge the story in whatever way suits them. Yes, this allows for easy cheating, but if your friends want to cheat their DM in a sunday night kitchen table game there is no app that can help you and you should start looking for better friends.
 
-Features: 
-- add your initiative and either roll a die or have the app roll it for you
-- remembers the player in the current browser for easier adding in a next combat
-- drag character up or down for the "delay" action
-- swipe entries left or right to delete them
-- click the "round" button on top to only show the initiative that is currently up
-- Shortcuts for common actions (N for next initiative, for example)
-- Friendly beeps if the initiative changes while another browser tab is active (also known as "the facebook beep" for multiple reasons..)
-- Seperate session rooms
 
 One thing to note is that session states live in the memory of the app and are not persistent. If the app restarts, the initative sessions are lost. 
 
@@ -75,6 +77,9 @@ By default, the webserver starts on port 85. Change this in the last line of pre
 ```
 Note that this configuration serves the static files from a seperate location instead of using the Python webserver. You cannot run this application as an WSGI application, or at least I could not, because the gevent handler cannot be found or cannot be started. 
 
+# Known limitations
+
+One open issue is that effects stop at the start of the round, not at the initative of the player who inserted them. 
 
 # Technology
 Python flask, running a jquery mobile webpage, communicating over websockets using timestamped messsages. I included the original themeroller theme (http://jqueryui.com/themeroller/) so you can roll your own. 
