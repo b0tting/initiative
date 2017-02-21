@@ -22,13 +22,24 @@
         .key_button::first-letter {
             text-decoration: underline;
         }
+
+        .sessionname {
+            font-weight: bolder;
+            font-size: large;
+            text-align: center;
+        }
+
+        .presentlist {
+            width: 90%
+        }
+
     </style>
 </head>
 <body> 
 
 <div data-role="page">
 
-	<div data-role="header">
+	<div data-role="header" id="state">
         <button id="clear" data-icon="delete">Clear</button>
 		<h1 id="title">Initiative!</h1>
         <button id="roundcounter" data-icon="bars" data-iconpos="right" class="key_button">Round -</button>
@@ -36,7 +47,7 @@
 
 	<div data-role="content">
 
-        <ul data-role="listview" data-theme="a" data-inset="true" id="presentlist"></ul>
+        <ul data-role="listview" data-theme="a" data-inset="true" id="presentlist" class="presentlist"></ul>
 
         <div class="ui-grid-a">
             <div class="ui-block-a">
@@ -49,7 +60,7 @@
             </div>
         </div>
 
-        <ul data-role="listview" data-theme="a" data-inset="true" id="effectlist"></ul>
+        <ul data-role="listview" data-theme="a" data-inset="true" id="effectlist" class="presentlist"></ul>
 
 	</div><!-- /content -->
 
@@ -81,6 +92,15 @@
         <a href="#" id="clearconfirm" data-role="button" data-theme="b" data-rel="back">Yes</a>
         <a href="#" data-rel="back" data-role="button" data-icon="delete" data-iconpos="notext" class="ui-btn-right">Close</a>
       </div>
+    </div>
+
+
+    <!-- Add state popup -->
+    <div data-role="popup" id="statepopup" class="ui-content">
+        Your session name: <span id="sessionname" class="sessionname"></span>
+        Your session URL:<span id="sessionurl" class="sessionname"></span>
+        <a href="#" data-rel="back" data-role="button" data-icon="delete" data-iconpos="notext" class="ui-btn-right">Close</a>
+        <a href="#" data-rel="popup" data-role="button" data-mini="true" id="returnhome">Main menu</a>
     </div>
 
         <!-- Sound taken from http://test.freesound.org/people/looppool/sounds/13119/  - thank you for sharing! -->
@@ -120,11 +140,20 @@
     }
 
     function hide_your_children() {
-        if($("#presentlist").attr("mini")) {
-            $("#presentlist li").hide()
-	        $("#presentlist li[highlight='true']").show()
+        list = $("#presentlist")
+        var listviewitems = list.find("li");
+
+        // When minified, show only 5 results
+        if(list.attr("mini")) {
+            selected = listviewitems.filter("[highlight='true']")
+            selectedIndex = listviewitems.index(selected);
+            listviewitems.hide();
+            beginindex = Math.max(0, Math.min(selectedIndex - 2, listviewitems.length - 5))
+
+
+            listviewitems.slice(beginindex, beginindex+ 5).show()
         } else {
-            $("#presentlist li").show()
+            listviewitems.show()
         }
     }
 
@@ -153,10 +182,9 @@
     }
 
     // This old_index global variable could also be done as a jquery attribute
-    var old_index = -1
-    var socket
-    var effects_timestamp = 0
-    var initiatives_timestamp = 0
+    var old_index = -1;
+    var effects_timestamp = 0;
+    var initiatives_timestamp = 0;
 
     {# Deze variabele is de linking pin tussen pagina en applicatie! #}
     var session = "{{ session }}"
@@ -215,9 +243,14 @@
         $( "#roundcounter" ).bind( "click", function(event, ui) {
             if($("#presentlist").attr("mini") || $( "#presentlist li").size() == 0) {
                 $("#presentlist").removeAttr("mini")
+                $( "#roundcounter" ).toggleClass("ui-overlay-shadow ui-btn-active", false)
+
             } else {
                 $("#presentlist").attr("mini", "true")
+                $( "#roundcounter" ).toggleClass("ui-overlay-shadow ui-btn-active", true)
             }
+
+            event.stopPropagation()
             hide_your_children()
         })
 
@@ -235,34 +268,51 @@
 
         // En registreer de N en de spatie om NEXT te klikken en de P om terug te rollen
         $(document).keypress(function(e) {
-            if(e.which  == 110 || e.which  == 32 || e.which == 0 ) {
-                $( "#next" ).trigger("click")
-            } else if(e.which  == 112) {
-                $( "#previous" ).trigger("click")
-            } else if(e.which == 114) {
-                $( "#roundcounter" ).trigger("click")
+            // Hotkeys should not trigger when entering text in a popup
+            if($.mobile.popup.active == undefined) {
+                if (e.which == 110 || e.which == 32 || e.which == 0) {
+                    $("#next").trigger("click")
+                } else if (e.which == 112) {
+                    $("#previous").trigger("click")
+                } else if (e.which == 114) {
+                    $("#roundcounter").trigger("click")
+                }
             }
         });
 
         // De Clear knop gooit leeg
         $( "#clear" ).bind( "click", function(event, ui) {
+            event.stopPropagation();
             $( "#clearpopup" ).popup( "open" )
-        })
+        });
 
         $("#clearconfirm").bind("click", function(event, ui){
-            $("#presentlist").empty()
+            $("#presentlist").empty();
             socket.emit("clear", {"session":session});
-        })
+        });
 
         // Open de popup
         $( "#newinit" ).bind( "click", function(event, ui) {
             $( "#popupBasic" ).popup( "open" )
-        })
+        });
 
         $( "#neweffect" ).bind( "click", function(event, ui) {
             $( "#popupEffect" ).popup( "open" )
-        })
+        });
 
+        $( "#returnhome" ).bind( "click", function(event, ui) {
+            window.location = "/"
+        });
+
+        $( "#state" ).bind( "click", function(event, ui) {
+            url ="" + window.location
+            if(url.indexOf("#") > -1) {
+                url = url.substring(0, url.indexOf("#"))
+            }
+            $( "#sessionname" ).text(session);
+            $( "#sessionurl" ).text(url);
+            $( "#statepopup" ).popup( "open" )
+        });
 
         // Iedere keer dat pop de "new" knop wordt gedrukt, rol een willekeurige waarde
         $( "#popupBasic" ).bind({
@@ -273,10 +323,11 @@
 
         // Verberg de popup na invullen en voer nieuw initative in
         $( "#killpopupBasic" ).bind( "click", function(event, ui) {
-            if($("#monster_name").val()) {
-                setCookie("player", $("#monster_name").val())
+            monsterval = $("#monster_name").val()
+            if(monsterval) {
+                setCookie("player", monsterval)
                 setCookie("playerinit", $("#monster_bonus").val())
-                socket.emit("add",{"session":session,"name":$("#monster_name").val(),"bonus": $("#monster_bonus").val(), "roll":$("#monster_roll").val()})
+                socket.emit("add",{"session":session,"name":monsterval,"bonus": $("#monster_bonus").val(), "roll":$("#monster_roll").val()})
                 // Vroeger trok ik alvast een fake extra regel erbij, maar met websockets is dat niet meer nodig
                 $("#popupBasic").popup("close")
             }
@@ -294,16 +345,16 @@
         // Vang status af en ververs tabel
        socket.on('newstate', function(msg) {
             if(msg.initiatives_timestamp != initiatives_timestamp && msg.session == session) {
-                var initiatives = msg.initiatives
-                $("#presentlist").empty()
+                var initiatives = msg.initiatives;
+                $("#presentlist").empty();
                 $(initiatives).each(function (idx) {
                     add_list_initiative(this.name, this.total, this.turn)
-                })
-                $("#presentlist").listview("refresh")
-                hide_your_children()
+                });
+                $("#presentlist").listview("refresh");
+                hide_your_children();
                 var roundtext = "Round " + (msg.round == 0 ? "-" : msg.round)
-                $("#roundcounter").text(roundtext)
-                initiatives_timestamp = msg.initiatives_timestamp
+                $("#roundcounter").text(roundtext);
+                initiatives_timestamp = msg.initiatives_timestamp;
                 ding()
             }
         });
@@ -311,13 +362,13 @@
        // Vang status af en ververs tabel
        socket.on('neweffects', function(msg) {
             if(msg.effects_timestamp != effects_timestamp && msg.session == session) {
-                var effects = msg.effects
-                $("#effectlist").empty()
+                var effects = msg.effects;
+                $("#effectlist").empty();
                 $(effects).each(function (idx) {
                     add_list_effect(this.name, this.rounds)
-                })
+                });
                 $("#effectlist").listview("refresh")
-                effects_timestamp = msg.effects_timestamp
+                effects_timestamp = msg.effects_timestamp;
                 ding()
             }
         });
