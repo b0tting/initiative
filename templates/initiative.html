@@ -113,12 +113,12 @@
 <script language="javascript">
     // Draw an additional initiative in the list
     function add_list_initiative(name, total, highlight) {
-        attrs = {'text': name}
-        li = $('<li/>', attrs)
+        attrs = {'text': name};
+        li = $('<li/>', attrs);
         if(highlight) {
             li.attr("data-theme", "b").addClass("ui-body-b").removeClass("ui-body-inherit").attr("highlight","true")
         }
-        li.append($('<span>', {"text":"Initiative: " + total,"class":"ui-li-count"}))
+        li.append($('<span>', {"text":"Initiative: " + total,"class":"ui-li-count"}));
         $("#presentlist").append(li)
     }
 
@@ -189,11 +189,11 @@
     {# Deze variabele is de linking pin tussen pagina en applicatie! #}
     var session = "{{ session }}"
     $(document).bind('pageinit', function() {
-        $( "#title").text($( "#title").text() + " (" + session + ")")
-        document.title = document.title + " ("  + session + ")"
+        $( "#title").text($( "#title").text() + " (" + session + ")");
+        document.title = document.title + " ("  + session + ")";
         // Zaken om de boel sorteerbaar te houden
-        var presentlist = $( "#presentlist" )
-        var effectlist = $( "#effectlist" )
+        var presentlist = $( "#presentlist" );
+        var effectlist = $( "#effectlist" );
 
         presentlist.sortable()
         presentlist.disableSelection();
@@ -233,10 +233,10 @@
         })
 
         // Vul de form elementen uit de cookie
-        var playerName = getCookie("player")
+        var playerName = getCookie("player");
         if(playerName) {
-            $("#monster_name").val(playerName)
-            $("#monster_bonus").val(getCookie("playerinit"))
+            $("#monster_name").val(playerName);
+            $("#monster_bonus").val(getCookie("playerinit"));
             $("#effect_duration").val(getCookie("effectduration") ? getCookie("effectduration") : 0)
         }
 
@@ -246,24 +246,24 @@
                 $( "#roundcounter" ).toggleClass("ui-overlay-shadow ui-btn-active", false)
 
             } else {
-                $("#presentlist").attr("mini", "true")
+                $("#presentlist").attr("mini", "true");
                 $( "#roundcounter" ).toggleClass("ui-overlay-shadow ui-btn-active", true)
             }
 
-            event.stopPropagation()
+            event.stopPropagation();
             hide_your_children()
-        })
+        });
 
         // Als iemand op NEXT klikt, rol dan door naar de volgende
         $( "#next" ).bind( "click", function(event, ui) {
             if($( "#presentlist li").size() > 0) {
                 socket.emit('next',{"session":session});
             }
-        })
+        });
 
         $( "#previous" ).bind( "click", function(event, ui) {
             socket.emit('rollback_next', {"session":session});
-        })
+        });
 
 
         // En registreer de N en de spatie om NEXT te klikken en de P om terug te rollen
@@ -314,10 +314,26 @@
             $( "#statepopup" ).popup( "open" )
         });
 
-        // Iedere keer dat pop de "new" knop wordt gedrukt, rol een willekeurige waarde
+        // Iedere keer dat pop de "new" knop wordt gedrukt, rol een willekeurige waarde en zet focus op het naamveld. Als er ergens op enter wordt gedrukt, simuleer een click op de submit
         $( "#popupBasic" ).bind({
             popupafteropen: function(event, ui) {
                 $("#monster_roll").val(Math.floor((Math.random() * 20) + 1)).slider("refresh");
+                $("#monster_name").focus()
+            }
+        }).on('keyup', function(e) {
+            if(e.keyCode == 13 ) {
+                $( "#killpopupBasic" ).click();
+            }
+        });
+
+        // Iedere keer dat pop de "new" knop wordt gedrukt, zet focus op het naamveld. Als er ergens op enter wordt gedrukt, simuleer een click op de submit
+        $( "#popupEffect" ).bind({
+            popupafteropen: function (event, ui) {
+                $("#effect_name").focus()
+            }
+        }).on('keyup', function(e) {
+            if(e.keyCode == 13 ) {
+                $("#killpopupEffect").click();
             }
         });
 
@@ -337,7 +353,7 @@
         $( "#killpopupEffect" ).bind( "click", function(event, ui) {
             if($("#effect_name").val()) {
                 setCookie("effectduration", $("#effect_duration").val())
-                socket.emit("addeffect",{"session":session,"name":$("#effect_name").val(),"duration": $("#effect_duration").val()})
+                socket.emit("addeffect",{"session":session,"name":$("#effect_name").val(),"duration": $("#effect_duration").val()});
                 $("#popupEffect").popup("close")
             }
         });
@@ -367,7 +383,7 @@
                 $(effects).each(function (idx) {
                     add_list_effect(this.name, this.rounds)
                 });
-                $("#effectlist").listview("refresh")
+                $("#effectlist").listview("refresh");
                 effects_timestamp = msg.effects_timestamp;
                 ding()
             }

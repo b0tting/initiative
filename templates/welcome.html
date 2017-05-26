@@ -57,18 +57,20 @@ function validate_session_name() {
 }
 
 $(document).bind('pageinit', function() {
-    $("#session").textinput({
-         clearBtn: true
-    });
-
     $("#submit_session").bind( "click", function(event, ui) {
         window.location.href = "/" + $("#session").val();
     })
 
     $("#submit_session").button().button("disable")
+
+    // Sometimes, firefox starts with the former input still in the field
     validate_session_name()
-    $('#session').on("keyup", function(){
+    $('#session').on("keyup", function(e){
         validate_session_name()
+        // Now try pushing our button if the last button was "ENTER"
+        if(e.keyCode == 13 ) {
+            $("#submit_session").button().click()
+        }
     })
 })
 </script>
