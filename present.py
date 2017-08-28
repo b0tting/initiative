@@ -1,6 +1,8 @@
 import random
 import re
 from flask import Flask, render_template
+from flask import make_response
+from flask import request
 from flask_socketio import SocketIO, emit, join_room, rooms
 import logging
 import time
@@ -25,6 +27,20 @@ def get_suggestions(existing_sessions):
             new_suggestions.append(new_suggestion)
             i += 1
     return new_suggestions
+
+
+## Used by the cookie code to see which sessions this user visited. It resturns a new cookie including all the session names know to this visitor
+def get_and_add_known_session_cookie(session_name=None, sessions_known=None):
+    known_list = []
+    if(session_name):
+        known_list.append(session_name)
+
+    if sessions_known:
+       known_list.extend(sessions_known.split(";"))
+    ## Let op! Set comprejensino, om alle dubbelingen eruit te werken
+    known_list = {session for session in known_list if session in init.get_gamestate_names()}
+
+    return known_list
 
 class Initiative:
     def __init__(self, name, bonus, roll):
@@ -54,7 +70,6 @@ class Effect:
 
 
 class GameState:
-
     def __init__(self, session):
         self.effects_timestamp = time.time()
         self.initiatives_timestamp = time.time()
@@ -283,11 +298,20 @@ def trigger_effects_update_message(gamestate):
 @app.route('/<session>')
 @app.route('/')
 def versus_the_world(session = None):
+    SESSIONS_KNOWN = "known"
+    known_sessions_raw = request.cookies.get(SESSIONS_KNOWN)
     if session is not None:
         gamestate = init.get_gamestate(session.lower())
-        return render_template('initiative.html', session=gamestate.session)
+        response = make_response(render_template('initiative.html', session=gamestate.session))
+        known_sessions = get_and_add_known_session_cookie(gamestate.session, known_sessions_raw)
     else:
-        return render_template('welcome.html', suggestions=get_suggestions(init.get_gamestate_names()))
+        known_sessions = get_and_add_known_session_cookie(sessions_known=known_sessions_raw)
+        response = make_response(render_template('welcome.html', suggestions=get_suggestions(init.get_gamestate_names()), known_sessions=known_sessions))
+
+    response.set_cookie(SESSIONS_KNOWN, ";".join(known_sessions), max_age=2147483647)
+    return response
+
+
 
 @socketio.on('add', namespace='/state')
 def add_initiative(data):

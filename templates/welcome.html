@@ -35,6 +35,15 @@
                 <input type="text" id="session" placeholder="Session name" data-cleared-btn="true">
                 <div id="submit_session">Start!</div>
             </p>
+            {%  if known_sessions %}
+                <p>Sessions you know:</p>
+                <ul>
+                {% for session in known_sessions %}
+                    <li><a href="/{{  session  }}" data-ajax="false">{{  session  }}</a></li>
+                {% endfor %}
+                </ul>
+            {%  endif %}
+
             <p>Some suggestions:</p>
                 <ul>
             {% for suggestion in suggestions %}
@@ -45,7 +54,7 @@
 </div>
 </div><!-- /page -->
 <script language="javascript">
-var patt =  /^[\w\d_-]{3,}/
+var patt =  /^[\w\d_-]{3,}$/
 function validate_session_name() {
     value  = $("#session").val().toLowerCase()
     $("#session").val(value)
