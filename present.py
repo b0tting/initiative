@@ -35,7 +35,10 @@ def is_client_trusted():
 
     if request.remote_addr is not None:
         client = request.headers.get("X-Forwarded-For") if "X-Forwarded-For" in request.headers else request.remote_addr
-        client = client.split(".")
+
+        ## If the X=Forwarded header was used, we have a comma seperaterd list of IP adresses
+        client = [xfor.strip() for xfor in client.split(',')]
+        client = client[0].split(".")
 
         ## It's not infallible, but good enough for me. If the first two tuples match, I assume you are on the same network
         trusted = client[0] == serverip[0] and client[1] == serverip[1]
