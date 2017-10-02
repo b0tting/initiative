@@ -1,5 +1,7 @@
 import random
 import re
+import socket
+
 from flask import Flask, render_template
 from flask import make_response
 from flask import request
@@ -17,6 +19,29 @@ log = logging.getLogger("initiative")
 handler = logging.StreamHandler()
 log.addHandler(handler)
 
+
+## A creative function that checks if the client IP is similar to the server IP
+## Very hacky, but works for me.
+serverip = False
+def is_client_trusted():
+    trusted = False
+    global serverip
+    if not serverip:
+        ## Helpful internet code quote:
+        ## https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
+        serverip = [l for l in ([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][:1], [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in
+             [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
+        serverip = serverip.split(".")
+
+    if request.remote_addr is not None:
+        client = request.headers.get("X-Forwarded-For") if "X-Forwarded-For" in request.headers else request.remote_addr
+        client = client.split(".")
+
+        ## It's not infallible, but good enough for me. If the first two tuples match, I assume you are on the same network
+        trusted = client[0] == serverip[0] and client[1] == serverip[1]
+    return trusted
+
+## A simple static function that generates a random name to use for your sessions
 suggestions = ["abnormal","abracadabra","adventure","alchemy","allegorical","allusion","amulet","apparition","apprentice","atmosphere","attraction","awe","beast","beauty","belief","berserk","bewitch","bizarre","black cat","blindfold","bogeyman","brew","brownies","captivate","cast","castles","cauldron","cave","chalice","changeling","characters","charisma","charming","chimerical","clairvoyant","clarity","classic","cliffs","clock","collapse","comic","compare","conjure","conspirator","creative","creature","crisis","crow","cruelty","crystal ball","curious","curse","dancing","daring","dazzle","deeds","deformity","delirious","demon","detect","detection","detective","disappearance","disaster","dose","dragon","dramatic","dread","dream","dwarf","eek","eerie","elf","empire","enchanting","esp","event","evil","experience","fable","fabricate","fairy","fairy","fairy ring","fairy tale","familiar","fanciful","fantastic","fantasy","fascination","favors","fiction","fiery","figment","folklore","foolishness","forces","forgery","garb","gestures","ghost","giant","gifts","glimmer","gnome","goblin","godmother","gowns","grateful","graveyard","green","grimm","grotesque","hag","hallucinate","harbinger","helpful","herbs","heroic","hollow","horror","howls","humped","idyll","illusions","image","imagery","imaginary","imagination","imp","impressive","improvise","impulse","incantation","incognito","informative","ingenious","inspiration","invisible","jargon","jaunt","jiggle","joking","keepsake","kettle","kidnap","king","kingdom","lands","legend","legerdemain","leprechauns","lore","lucky","lunar","magic","carpet","magical","magician","majesty","malevolence","mask","medieval","medium","miracle","mischief","mischievous","misshapen","monster","moon","muse","musings","mysterious","mystery","mystical","myth","mythical","narration","nature","necromancer","necromancy","nemesis","newt","notion","oberon","odd","ogre","oracle","otherworldly","overpower","overwhelm","owl","pattern","perform","petrify","pixie","pixie dust","plot","poisonous","potent","potion","powder","power","prey","prince","prophet","protection","prowl","quail","quake","quash","quaver","queen","quest","question","quizzical","raconteur","rage","realm","reasoning","reference","reign","repel","reveal","robe","rule","sage","sandman","scare","scold","scroll","seeking","seer","setting","shaman","soothsayer","sorcerer","sorcery","specter","speculation","spell","spider","spirits","stars","story","substitution","supernatural","superstition","talisman","terror","theory","thrilling","torch","tragic","transform","tremors","tricks","troll","unbelievable","unexplained","unicorn","unique","unusual","valiant","valor","vampire","vanguard","vanish","vanquish","variety","venomous","version","vice","vicious","victim","visionary","vital","wail","wand","ward","watchful","weird","werewolf","western","whim","whimsical","whine","whisk","whispers","white","wicked","willies","win","wince","wisdom","wish","witch","worry","worship","wrinkled","wrongdoing","xanadu","yearn","yesteryear","youth","yowl","zap","zealous","zigzag"]
 def get_suggestions(existing_sessions):
     new_suggestions = []
@@ -39,9 +64,9 @@ def get_and_add_known_session_cookie(session_name=None, sessions_known=None):
        known_list.extend(sessions_known.split(";"))
     ## Let op! Set comprejensino, om alle dubbelingen eruit te werken
     known_list = {session for session in known_list if session in init.get_gamestate_names()}
-
     return known_list
 
+## A placeholder class keeping track of all of the variables related to a single initative roll
 class Initiative:
     def __init__(self, name, bonus, roll):
         self.name = name
@@ -62,13 +87,14 @@ class Initiative:
     def get_as_dict(self):
         return {"name":self.name,"total":self.total,"turn":self.turn}
 
-
+## Similar to the initative class, but keeping track of a single effect
 class Effect:
     def __init__(self, name, duration):
         self.name = name;
         self.duration = duration
 
 
+## A single game is kept in this class
 class GameState:
     def __init__(self, session):
         self.effects_timestamp = time.time()
@@ -196,6 +222,7 @@ class GameState:
             i += 1
         return i
 
+## Overlay class keeping track of the different games
 class InitiativeApp:
     def __init__(self):
         self.gamestates = {}
@@ -300,12 +327,16 @@ def trigger_effects_update_message(gamestate):
 def versus_the_world(session = None):
     SESSIONS_KNOWN = "known"
     known_sessions_raw = request.cookies.get(SESSIONS_KNOWN)
-    if session is not None:
+    if session is not None and init.session_validate(session):
         gamestate = init.get_gamestate(session.lower())
         response = make_response(render_template('initiative.html', session=gamestate.session))
         known_sessions = get_and_add_known_session_cookie(gamestate.session, known_sessions_raw)
     else:
-        known_sessions = get_and_add_known_session_cookie(sessions_known=known_sessions_raw)
+        init.get_gamestate_names()
+        if is_client_trusted():
+            known_sessions = init.get_gamestate_names()
+        else:
+            known_sessions = get_and_add_known_session_cookie(sessions_known=known_sessions_raw)
         response = make_response(render_template('welcome.html', suggestions=get_suggestions(init.get_gamestate_names()), known_sessions=known_sessions))
 
     response.set_cookie(SESSIONS_KNOWN, ";".join(known_sessions), max_age=2147483647)
