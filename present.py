@@ -339,7 +339,7 @@ def versus_the_world(session = None):
             known_sessions = get_and_add_known_session_cookie(sessions_known=known_sessions_raw)
         response = make_response(render_template('welcome.html', suggestions=get_suggestions(init.get_gamestate_names()), known_sessions=known_sessions))
 
-    response.set_cookie(SESSIONS_KNOWN, ";".join(known_sessions), max_age=2147483647)
+    response.set_cookie(SESSIONS_KNOWN, ";".join(known_sessions), max_age=2147483646)
     return response
 
 
