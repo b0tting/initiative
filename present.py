@@ -107,6 +107,7 @@ class GameState:
         self.initiatives = []
         self.session = session
         self.round = 0
+        self.create_timestamp = time.time()
         self.effects_timestamp = 0
         self.initiatives_timestamp = 0
 
@@ -251,6 +252,22 @@ class InitiativeApp:
            gamestate = self.init_gamestate(session)
         return gamestate
 
+    def delete_gamestate(self,session):
+        if session in self.gamestates:
+            del self.gamestates[session]
+
+    ## Delete all empty gamestates that were created longer then 15 minutes ago
+    def run_wiper(self):
+        sessions = []
+        currrenttime = time.time()
+        timediff = 60 * 15
+        for session in self.gamestates:
+            if (currrenttime - self.gamestates[session].create_timestamp) > timediff:
+                sessions.append(session)
+        for session in sessions:
+            self.delete_gamestate(session)
+
+
     def init_gamestate(self,session):
         gamestate = GameState(session)
         self.gamestates[session] = gamestate
@@ -330,6 +347,7 @@ def trigger_effects_update_message(gamestate):
 def versus_the_world(session = None):
     SESSIONS_KNOWN = "known"
     known_sessions_raw = request.cookies.get(SESSIONS_KNOWN)
+    init.run_wiper()
     if session is not None and init.session_validate(session):
         gamestate = init.get_gamestate(session.lower())
         response = make_response(render_template('initiative.html', session=gamestate.session))
