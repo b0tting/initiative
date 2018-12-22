@@ -267,7 +267,7 @@ class InitiativeApp:
         timediff = 60 * 15
         for session in self.gamestates:
             if (currrenttime - self.gamestates[session].last_change_timestamp) > timediff:
-                if count(session.initiatives) < 2:
+                if len(session.initiatives) < 2:
                     sessions.append(session)
         for session in sessions:
             self.delete_gamestate(session)
