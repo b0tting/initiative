@@ -33,6 +33,19 @@
             width: 90%
         }
 
+
+        .smallscreens {
+            display:none;
+        }
+        @media screen and (max-width: 991px) {
+            .bigscreens {
+                display: none;
+            }
+
+            .smallscreens {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body> 
@@ -52,11 +65,17 @@
         <div class="ui-grid-a">
             <div class="ui-block-a">
                     <button id="newinit" data-mini="true" data-icon="action">Add initative</button>
-                    <button id="previous" data-mini="true" data-icon="back" class="key_button">Previous</button>
+                    <button id="previous" data-mini="true" data-icon="back" class="key_button">
+                        <span class="smallscreens">Previous</span>
+                        <span class="bigscreens">Previous initiative</span>
+                    </button>
             </div>
             <div class="ui-block-b">
                 <button id="neweffect" data-mini="true" data-icon="action" data-iconpos="right">Add effect</button>
-                <button id="next" data-mini="true" data-icon="forward" data-iconpos="right" class="key_button">Next</button>
+                <button id="next" data-mini="true" data-icon="forward" data-iconpos="right" class="key_button">
+                    <span class="smallscreens">Next</span>
+                    <span class="bigscreens">Next initiative</span>
+                </button>
             </div>
         </div>
 
@@ -104,7 +123,7 @@
     </div>
 
         <!-- Sound taken from http://test.freesound.org/people/looppool/sounds/13119/  - thank you for sharing! -->
-        <audio id="ding" autostart="false">
+        <audio id="ding" >
             <source src="/static/sounds/13119__looppool__bell-blip.wav" >
             <source src="/static/sounds/13119__looppool__bell-blip.mp3" >
             <source src="/static/sounds/13119__looppool__bell-blip.ogg" >

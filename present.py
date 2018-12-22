@@ -93,7 +93,7 @@ class Initiative:
 ## Similar to the initative class, but keeping track of a single effect
 class Effect:
     def __init__(self, name, duration):
-        self.name = name;
+        self.name = name
         self.duration = duration
 
 
@@ -110,6 +110,7 @@ class GameState:
         self.create_timestamp = time.time()
         self.effects_timestamp = 0
         self.initiatives_timestamp = 0
+        self.last_change_timestamp = self.create_timestamp
 
 
     def add_effect(self, name, duration):
@@ -260,10 +261,14 @@ class InitiativeApp:
     def run_wiper(self):
         sessions = []
         currrenttime = time.time()
+
+        ## This need to move. Basically, if the last update was more then 15 minutes ago I wipe this session.
+        ## I now only kill sessions with < 2 initiatives.
         timediff = 60 * 15
         for session in self.gamestates:
-            if (currrenttime - self.gamestates[session].create_timestamp) > timediff:
-                sessions.append(session)
+            if (currrenttime - self.gamestates[session].last_change_timestamp) > timediff:
+                if count(session.initiatives) < 2:
+                    sessions.append(session)
         for session in sessions:
             self.delete_gamestate(session)
 
@@ -335,11 +340,12 @@ def get_state(data):
     if not "initiatives_timestamp" in data or data["initiatives_timestamp"] != gamestate.initiatives_timestamp:
         emit('newstate', get_initiative_state(gamestate))
 
-
 def trigger_initiative_update_message(gamestate):
+    gamestate.last_change_timestamp = time.time()
     emit('newstate', get_initiative_state(gamestate), room=gamestate.session, namespace="/state")
 
 def trigger_effects_update_message(gamestate):
+    gamestate.last_change_timestamp = time.time()
     emit('neweffects', get_effects_state(gamestate), room=gamestate.session, namespace="/state")
 
 @app.route('/<session>')
@@ -347,7 +353,10 @@ def trigger_effects_update_message(gamestate):
 def versus_the_world(session = None):
     SESSIONS_KNOWN = "known"
     known_sessions_raw = request.cookies.get(SESSIONS_KNOWN)
+
+    ## A new session instance is a good moment to run a quick wipe
     init.run_wiper()
+
     if session is not None and init.session_validate(session):
         gamestate = init.get_gamestate(session.lower())
         response = make_response(render_template('initiative.html', session=gamestate.session))
