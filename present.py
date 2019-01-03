@@ -267,7 +267,7 @@ class InitiativeApp:
         timediff = 60 * 15
         for session in self.gamestates:
             if (currrenttime - self.gamestates[session].last_change_timestamp) > timediff:
-                if len(session.initiatives) < 2:
+                if len(self.gamestates[session].initiatives) < 2:
                     sessions.append(session)
         for session in sessions:
             self.delete_gamestate(session)
@@ -279,7 +279,7 @@ class InitiativeApp:
         return gamestate
 
     def get_gamestate_names(self):
-        return self.gamestates.keys();
+        return self.gamestates.keys()
 
 @socketio.on('deleteeffect', namespace='/state')
 def delete_effect(data):
