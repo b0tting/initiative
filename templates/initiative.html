@@ -222,7 +222,7 @@
         effectlist.disableSelection();
 
         // All aboard the websocket train!
-        var socket = io.connect('http://'+location.host+'/state');
+        var socket = io.connect('/state');
 
         // Refresh list to the end of sort to have a correct display
         presentlist.bind( "sortstart", function(event, ui) {
