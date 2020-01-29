@@ -78,10 +78,45 @@ By default, the webserver starts on port 85. Change this in the last line of pre
     ProxyPassReverse / http://127.0.0.1:85/
 
 </VirtualHost>
-
+```
+Note that this configuration serves the static files from a seperate location instead of using the Python webserver. You cannot run this application as an WSGI application, or at least I could not, because the gevent handler cannot be found or cannot be started. Here's an NGINX config: 
 
 ```
-Note that this configuration serves the static files from a seperate location instead of using the Python webserver. You cannot run this application as an WSGI application, or at least I could not, because the gevent handler cannot be found or cannot be started. 
+geo $dollar {
+    default "$";
+}
+
+server {
+        server_name init.yourserver.com;
+        listen 80;
+
+        # MarkO: Order is important. Match .git before we match root
+        location ~ /\.git {
+                return 404
+                deny;
+        }
+
+        # Bounce robots as they create fake sessions 
+        location = /robots.txt {
+                add_header  Content-Type  text/plain;
+                return 200 "User-agent: *\nAllow: /$dollar\nDisallow: /\n";
+        }
+
+        location /static {
+                alias /usr/local/initiative/static;
+                expires 15d;
+        }
+
+        # Upgrade is needed for websocket connections
+        location / {
+                proxy_set_header Host $host;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_pass http://127.0.0.1:85;
+        }
+}
+``` 
 
 # Known limitations
 
